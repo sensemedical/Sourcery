@@ -689,6 +689,8 @@ extension Sourcery {
 
             return try processRanges(in: parsingResult, result: result, outputPath: outputPath, forceParse: forceParse, baseIndentation: baseIndentation)
         }
+        
+        fileAnnotatedContent = [:]
 
         var result: String = ""
 #if canImport(ObjectiveC)
