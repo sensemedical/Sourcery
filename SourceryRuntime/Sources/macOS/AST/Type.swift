@@ -200,8 +200,8 @@ public class Type: NSObject, SourceryModel, Annotated, Documented, Diffable {
             return extracted
         }
 
-        inherits.values.sorted(by: { $0.name < $1.name }).forEach { all.addObjects(from: filteredExtraction($0)) }
-        implements.values.sorted(by: { $0.name < $1.name }).forEach { all.addObjects(from: filteredExtraction($0)) }
+        inherits.values.forEach { all.addObjects(from: filteredExtraction($0)) }
+        implements.values.forEach { all.addObjects(from: filteredExtraction($0)) }
 
         // swiftlint:disable:next force_cast
         let array = all.array as! [T]
