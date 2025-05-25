@@ -96,6 +96,17 @@ public final class StencilTemplate: StencilSwiftKit.StencilSwiftTemplate {
             return array
         }
         
+        ext.registerFilter("lines") { (value: Any?, args: [Any?]) throws -> Any? in
+            guard let string = value as? String else {
+                return nil
+            }
+            let omitEmpty = (args.first as? Bool) ?? false
+            let input = string
+                .replacingOccurrences(of: "\n\u{000b}\n", with: "\n\n")
+                .replacingOccurrences(of: "\n\u{000b}\n", with: "\n\n")
+            return input.split(separator: "\n", omittingEmptySubsequences: omitEmpty).map(String.init)
+        }
+        
         ext.registerFilterWithArguments("grouped") { (array, keyPath: String) -> Any? in
             guard let items = array as? NSArray else {
                 return nil

@@ -119,6 +119,22 @@ class StencilTemplateSpec: QuickSpec {
                 }
             }
             
+            describe("lines") {
+                context("given string with newlines") {
+                    it("splits it into lines") {
+                        let result = generate("{% set value %}Hello\nWorld{% endset %}{{ value|lines|join:\",\" }}")
+                        let expected = "Hello,World"
+                        expect(result).to(equal(expected))
+                    }
+                    
+                    it("splits it into non-empty lines") {
+                        let result = generate("{% set value %}Hello\n\n\nWorld{% endset %}{{ value|lines:true|join:\",\" }}")
+                        let expected = "Hello,World"
+                        expect(result).to(equal(expected))
+                    }
+                }
+            }
+            
             describe("grouped") {
                 context("given array") {
                     it("groups it") {
