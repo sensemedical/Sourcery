@@ -95,7 +95,49 @@ public final class StencilTemplate: StencilSwiftKit.StencilSwiftTemplate {
             array.append(arg2)
             return array
         }
-
+        
+        ext.registerFilterWithArguments("grouped") { (array, keyPath: String) -> Any? in
+            guard let items = array as? NSArray else {
+                return nil
+            }
+            
+            func resolve(bit: String, value: Any?) -> Any? {
+                guard let value else {
+                    return nil
+                }
+                if let dynamicValue = value as? DynamicMemberLookup {
+                    return dynamicValue[dynamicMember: bit]
+                } else if let object = value as? NSObject {
+                    #if canImport(ObjectiveC)
+                    if object.responds(to: Selector(bit)) {
+                        return object.value(forKey: bit)
+                    }
+                    #endif
+                }
+                return nil
+            }
+            
+            func resolve(bits: [String], value: Any?) -> Any? {
+                var next = value
+                for bit in bits {
+                    next = resolve(bit: bit, value: next)
+                }
+                return next
+            }
+            
+            let bits = keyPath.split(separator: ".").map(String.init)
+            
+            var result: [String: [Any]] = [:]
+            for item in items {
+                guard let grouping = resolve(bits: bits, value: item) as? String else {
+                    continue
+                }
+                result[grouping, default: []].append(item)
+            }
+            
+            return result
+        }
+        
         #if canImport(ObjectiveC)
         ext.registerFilterWithArguments("sorted") { (array, propertyName: String) -> Any? in
             switch array {

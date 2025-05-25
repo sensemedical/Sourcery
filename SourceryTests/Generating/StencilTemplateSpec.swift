@@ -118,6 +118,16 @@ class StencilTemplateSpec: QuickSpec {
                     }
                 }
             }
+            
+            describe("grouped") {
+                context("given array") {
+                    it("groups it") {
+                        let result = generate("{% for group, variables in type.MyClass.variables|grouped:\"typeName.name\" %}{{ group }}: {% for v in variables %}{{ v.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}")
+                        let expected = "MyClass: upperFirstLetter, annotated1, annotated2, myClass: lowerFirstLetter"
+                        expect(result).to(equal(expected))
+                    }
+                }
+            }
 
             describe("sorted") {
               #if canImport(ObjectiveC)
