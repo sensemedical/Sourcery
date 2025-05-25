@@ -194,7 +194,7 @@ func runCLI() {
 
             let start = currentTimestamp()
 
-            var keepAlive = try configurations.flatMap { configuration -> [FolderWatcher.Local] in
+            let keepAlive = try configurations.flatMap { configuration -> [FolderWatcher.Local] in
                 configuration.validate()
                 
                 let shouldUseCacheBasePathArg = configuration.cacheBasePath == Path.defaultBaseCachePath && !cacheBasePath.string.isEmpty
@@ -224,14 +224,14 @@ func runCLI() {
                     baseIndentation: configuration.baseIndentation
                 ) ?? []
             }
-            defer {
-                keepAlive.removeAll()
-            }
 
             if keepAlive.isEmpty {
                 Log.info(String(format: "Processing time %.2f seconds", currentTimestamp() - start))
             } else {
-                dispatchMain()
+                RunLoop.current.run()
+                withExtendedLifetime(keepAlive) {
+                    _ = keepAlive
+                }
             }
         } catch {
             if isDryRun {
