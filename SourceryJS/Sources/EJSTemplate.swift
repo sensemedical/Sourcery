@@ -50,9 +50,11 @@ open class EJSTemplate {
     public let sourcePath: Path
     public let templateString: String
     let ejs: String
+    
+    private static let vm = JSVirtualMachine()
 
     public private(set) lazy var jsContext: JSContext = {
-        let jsContext = JSContext()!
+        let jsContext = JSContext(virtualMachine: Self.vm)!
         jsContext.setObject(self.templateString, forKeyedSubscript: "template" as NSString)
         jsContext.setObject(self.sourcePath.lastComponent, forKeyedSubscript: "templateName" as NSString)
         jsContext.setObject(self.context, forKeyedSubscript: "templateContext" as NSString)
