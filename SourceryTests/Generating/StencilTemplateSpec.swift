@@ -184,9 +184,9 @@ class StencilTemplateSpec: QuickSpec {
                     it("collects basic values into array") {
                         let result = generate("""
                         {%- collect collected -%}
-                        {% append "Hello" %}
-                        {% append "beautiful" %}
-                        {% append "World" %}
+                        {% append "Hello" into collected %}
+                        {% append "beautiful" into collected %}
+                        {% append "World" into collected %}
                         {%- endcollect -%}
                         {{ collected|join:", "}}
                         """)
@@ -197,7 +197,7 @@ class StencilTemplateSpec: QuickSpec {
                         let result = generate("""
                         {%- collect collected -%}
                         {% for v in type.MyClass.variables %}
-                        {% append v.name %}
+                        {% append v.name into collected %}
                         {% endfor %}
                         {%- endcollect -%}
                         {{ collected|join:", " }}
@@ -212,9 +212,9 @@ class StencilTemplateSpec: QuickSpec {
                     it("collects basic values into dictionary") {
                         let result = generate("""
                         {%- collect collected keyed -%}
-                        {% append "Hello" keyed "one" %}
-                        {% append "beautiful" keyed "two" %}
-                        {% append "World" keyed "three" %}
+                        {% append "Hello" into collected keyed "one" %}
+                        {% append "beautiful" into collected keyed "two" %}
+                        {% append "World" into collected keyed "three" %}
                         {%- endcollect -%}
                         {{ collected.one }}, {{ collected.two }}, {{ collected.three }}
                         """)
@@ -225,7 +225,7 @@ class StencilTemplateSpec: QuickSpec {
                         let result = generate("""
                         {%- collect collected keyed -%}
                         {% for v in type.MyClass.variables %}
-                        {% append v.typeName keyed v.name %}
+                        {% append v.typeName into collected keyed v.name %}
                         {% endfor %}
                         {%- endcollect -%}
                         {{ collected.lowerFirstLetter }}, {{ collected.upperFirstLetter }}
