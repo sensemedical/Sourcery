@@ -108,7 +108,16 @@ public final class StencilTemplate: StencilSwiftKit.StencilSwiftTemplate {
         }
         
         ext.registerFilterWithArguments("grouped") { (array, keyPath: String) -> Any? in
-            guard let items = array as? NSArray else {
+            let items: [Any]? = if let value = array as? NSArray {
+                value.map { $0 as Any }
+            } else if let value = array as? [Any] {
+                value
+            } else if let value = array as? any Collection {
+                value.map { $0 as Any }
+            } else {
+                nil
+            }
+            guard let items else {
                 return nil
             }
             
