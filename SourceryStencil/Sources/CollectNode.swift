@@ -4,11 +4,12 @@ final class CollectNode: NodeType {
     var token: Stencil.Token?
     private let targetName: String
     private let keyed: Bool
-    private var nodes: [AppendNode] = []
+    private var nodes: [NodeType]
 
-    init(targetName: String, keyed: Bool) {
+    init(targetName: String, keyed: Bool, nodes: [NodeType]) {
         self.targetName = targetName
         self.keyed = keyed
+        self.nodes = nodes
     }
 
     class func parse(_ parser: TokenParser, token: Token) throws -> NodeType {
@@ -21,75 +22,62 @@ final class CollectNode: NodeType {
         }
 
         let keyed = components.count == 3 && components[2] == "keyed"
-        let collectNode = CollectNode(targetName: components[1], keyed: keyed)
-
+        
         // Parse the block content
         let nodes = try parser.parse(until(["endcollect"]))
         guard parser.nextToken() != nil else {
             throw TemplateSyntaxError("`collect` block was not closed with `endcollect`")
         }
-
-        // Validate that only append nodes are used within the block
-        for node in nodes {
-            guard let appendNode = node as? AppendNode else {
-                guard let textNode = node as? TextNode, textNode.text.trimmed.isEmpty else {
-                    throw TemplateSyntaxError("Only `append` tags are allowed within a `collect` block")
-                }
-                continue
-            }
-
-            // Validate append node matches collection type
-            if keyed && appendNode.key == nil {
-                throw TemplateSyntaxError("Keyed collection requires keyed append operations")
-            }
-            if !keyed && appendNode.key != nil {
-                throw TemplateSyntaxError(
-                    "Unkeyed collection does not support keyed append operations")
-            }
-
-            collectNode.nodes.append(appendNode)
-        }
-
-        return collectNode
+        
+        return CollectNode(targetName: components[1], keyed: keyed, nodes: nodes)
     }
 
     func render(_ context: Context) throws -> String {
-        if keyed {
-            // Dictionary case
-            var dictionary: [String: Any] = [:]
-
-            if let existingDict = context[targetName] as? [String: Any] {
-                dictionary = existingDict
-            }
-
-            for node in nodes {
-                guard let value = try node.value.resolve(context),
-                    let key = try node.key?.resolve(context)
-                else {
-                    continue
-                }
-                dictionary[String(describing: key)] = value
-            }
-
-            context[targetName] = dictionary
-        } else {
-            // Array case
-            var array: [Any] = []
-
-            if let existingArray = context[targetName] as? [Any] {
-                array = existingArray
-            }
-
-            for node in nodes {
-                if let value = try node.value.resolve(context) {
-                    array.append(value)
-                }
-            }
-
-            context[targetName] = array
+        let result: CollectNodeResult = keyed ? CollectNodeDictionaryResult() : CollectNodeArrayResult()
+        
+        _ = try context.push(dictionary: [CollectNodeResultKey: result]) {
+            try renderNodes(nodes, context)
         }
-
+        
+        context[targetName] = result.value
+        
         return ""
+    }
+}
+
+fileprivate let CollectNodeResultKey = "__collect_node_result__"
+
+fileprivate protocol CollectNodeResult {
+    var value: Any { get }
+    func append(value: Any) throws
+    func append(value: Any, keyed: String) throws
+}
+
+fileprivate class CollectNodeArrayResult : CollectNodeResult {
+    var result: [Any] = []
+    
+    var value: Any { result }
+    
+    func append(value: Any) throws {
+        result.append(value)
+    }
+    
+    func append(value: Any, keyed: String) throws {
+        throw TemplateSyntaxError("Cannot append keyed values to unkeyed collect.")
+    }
+}
+
+fileprivate class CollectNodeDictionaryResult : CollectNodeResult {
+    var result: [String: Any] = [:]
+    
+    var value: Any { result }
+    
+    func append(value: Any) throws {
+        throw TemplateSyntaxError("Cannot append unkeyed values to keyed collect.")
+    }
+    
+    func append(value: Any, keyed: String) throws {
+        result[keyed] = value
     }
 }
 
@@ -124,6 +112,29 @@ final class AppendNode: NodeType {
     }
 
     func render(_ context: Context) throws -> String {
+        guard let result = context[CollectNodeResultKey] as? CollectNodeResult else {
+            throw TemplateSyntaxError("'append' tag not inside of a 'collect' tag.")
+        }
+        
+        // resolve the value
+        guard var resolved = try value.resolve(context) else {
+            return ""
+        }
+        
+        // if the string can be bridged to String then force it
+        if let string = resolved as? String {
+            resolved = string
+        }
+        
+        if let key {
+            guard let string = try key.resolve(context) as? String else {
+                throw TemplateSyntaxError("'append' tag could not resolve key to a string value.")
+            }
+            try result.append(value: resolved, keyed: string)
+        } else {
+            try result.append(value: resolved)
+        }
+        
         return ""
     }
 }

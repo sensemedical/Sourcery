@@ -180,19 +180,68 @@ class StencilTemplateSpec: QuickSpec {
             }
 
             describe("collect") {
-                context("given array") {
-                    it("collects values into array") {
-                        let result = generate("{% collect collected %}{% append \"Hello\" %}{% append \"beautiful\" %}{% append \"World\" %}{% endcollect %}{{ collected|join:\", \"}}")
+                context("arrays") {
+                    it("collects basic values into array") {
+                        let result = generate("""
+                        {%- collect collected -%}
+                        {% append "Hello" %}
+                        {% append "beautiful" %}
+                        {% append "World" %}
+                        {%- endcollect -%}
+                        {{ collected|join:", "}}
+                        """)
                         expect(result).to(equal("Hello, beautiful, World"))
+                    }
+                    
+                    it("collects nested values into array") {
+                        let result = generate("""
+                        {%- collect collected -%}
+                        {% for v in type.MyClass.variables %}
+                        {% append v.name %}
+                        {% endfor %}
+                        {%- endcollect -%}
+                        {{ collected|join:", " }}
+                        """)
+                        let expected = "lowerFirstLetter, upperFirstLetter, annotated1, annotated2"
+                        expect(result).to(equal(expected))
+                        
                     }
                 }
                 
-                context("given dictionary") {
-                    it("collects values into dictionary") {
-                        let result = generate("{% collect collected keyed %}{% append \"Hello\" keyed \"one\" %}{% append \"beautiful\" keyed \"two\" %}{% append \"World\" keyed \"three\" %}{% endcollect %}{{ collected.one }}, {{ collected.two }}, {{ collected.three }}")
+                context("dictionaries") {
+                    it("collects basic values into dictionary") {
+                        let result = generate("""
+                        {%- collect collected keyed -%}
+                        {% append "Hello" keyed "one" %}
+                        {% append "beautiful" keyed "two" %}
+                        {% append "World" keyed "three" %}
+                        {%- endcollect -%}
+                        {{ collected.one }}, {{ collected.two }}, {{ collected.three }}
+                        """)
                         expect(result).to(equal("Hello, beautiful, World"))
                     }
+                    
+                    it("collects nested values into dictionary") {
+                        let result = generate("""
+                        {%- collect collected keyed -%}
+                        {% for v in type.MyClass.variables %}
+                        {% append v.typeName keyed v.name %}
+                        {% endfor %}
+                        {%- endcollect -%}
+                        {{ collected.lowerFirstLetter }}, {{ collected.upperFirstLetter }}
+                        """)
+                        let expected = "myClass, MyClass"
+                        expect(result).to(equal(expected))
+                        
+                    }
                 }
+                
+//                context("given dictionary") {
+//                    it("collects values into dictionary") {
+//                        let result = generate("{% collect collected keyed %}{% append \"Hello\" keyed \"one\" %}{% append \"beautiful\" keyed \"two\" %}{% append \"World\" keyed \"three\" %}{% endcollect %}{{ collected.one }}, {{ collected.two }}, {{ collected.three }}")
+//                        expect(result).to(equal("Hello, beautiful, World"))
+//                    }
+//                }
             }
 
             describe("sorted") {
