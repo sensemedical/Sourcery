@@ -232,16 +232,22 @@ class StencilTemplateSpec: QuickSpec {
                         """)
                         let expected = "myClass, MyClass"
                         expect(result).to(equal(expected))
-                        
+                    }
+                    
+                    it("collects and does boolean checks in nested dictionaries") {
+                        let result = generate("""
+                        {%- collect collected keyed -%}
+                            {% for v in type.MyClass.variables %}
+                            {% if collected.lowerFirstLetter %}{% continue %}{% endif %}
+                            {% append v.typeName into collected keyed v.name %}
+                            {% endfor %}
+                        {%- endcollect -%}
+                        {{ collected.lowerFirstLetter }}, {{ collected.upperFirstLetter }}
+                        """)
+                        let expected = "myClass, "
+                        expect(result).to(equal(expected))
                     }
                 }
-                
-//                context("given dictionary") {
-//                    it("collects values into dictionary") {
-//                        let result = generate("{% collect collected keyed %}{% append \"Hello\" keyed \"one\" %}{% append \"beautiful\" keyed \"two\" %}{% append \"World\" keyed \"three\" %}{% endcollect %}{{ collected.one }}, {{ collected.two }}, {{ collected.three }}")
-//                        expect(result).to(equal("Hello, beautiful, World"))
-//                    }
-//                }
             }
 
             describe("sorted") {

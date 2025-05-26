@@ -45,13 +45,32 @@ final class CollectNode: NodeType {
     }
 }
 
-fileprivate protocol CollectNodeResult {
+fileprivate protocol CollectNodeResult : DynamicMemberLookup {
     var value: Any { get }
     func append(value: Any) throws
     func append(value: Any, keyed: String) throws
 }
 
-fileprivate class CollectNodeArrayResult : CollectNodeResult {
+fileprivate class CollectNodeArrayResult : CollectNodeResult, Collection {
+    typealias Index = Int
+    typealias Element = Any
+    
+    var startIndex: Index {
+        result.startIndex
+    }
+    
+    var endIndex: Index {
+        result.endIndex
+    }
+    
+    func index(after i: Int) -> Int {
+        result.index(after: i)
+    }
+    
+    subscript(position: Index) -> Any {
+        result[position]
+    }
+    
     var result: [Any] = []
     
     var value: Any { result }
@@ -62,6 +81,16 @@ fileprivate class CollectNodeArrayResult : CollectNodeResult {
     
     func append(value: Any, keyed: String) throws {
         throw TemplateSyntaxError("Cannot append keyed values to unkeyed collect.")
+    }
+    
+    subscript(dynamicMember member: String) -> Any? {
+        guard let int = Int(member) else {
+            return nil
+        }
+        guard int >= 0, int <= result.count else {
+            return nil
+        }
+        return result[int]
     }
 }
 
@@ -76,6 +105,10 @@ fileprivate class CollectNodeDictionaryResult : CollectNodeResult {
     
     func append(value: Any, keyed: String) throws {
         result[keyed] = value
+    }
+    
+    subscript(dynamicMember member: String) -> Any? {
+        result[member]
     }
 }
 

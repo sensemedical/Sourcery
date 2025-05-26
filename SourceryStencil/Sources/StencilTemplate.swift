@@ -389,10 +389,21 @@ private func reversed(_ value: Any?) -> Any? {
 }
 
 private func count(_ value: Any?) -> Any? {
-    guard let array = value as? NSArray else {
-        return value
+    switch value {
+    case let array as NSArray:
+        // swiftlint:disable:next empty_count
+        array.count
+    case let string as String:
+        string.count
+    case let string as NSString:
+        string.length
+    case let collection as any Collection:
+        collection.count
+    case let dictionary as [String: Any]:
+        dictionary.count
+    default:
+        false
     }
-    return array.count
 }
 
 private func isEmpty(_ value: Any?) -> Any? {
@@ -400,8 +411,14 @@ private func isEmpty(_ value: Any?) -> Any? {
     case let array as NSArray:
         // swiftlint:disable:next empty_count
         array.count == 0
+    case let string as String:
+        string.count
     case let string as NSString:
         string.length == 0
+    case let collection as any Collection:
+        collection.count == 0
+    case let dictionary as [String: Any]:
+        dictionary.count == 0
     default:
         false
     }
