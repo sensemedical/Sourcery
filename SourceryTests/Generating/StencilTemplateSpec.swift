@@ -1,15 +1,17 @@
-import Quick
 import Nimble
 import PathKit
+import Quick
 import SourceryStencil
-#if SWIFT_PACKAGE
-import Foundation
-@testable import SourceryLib
-#else
-@testable import Sourcery
-#endif
+
 @testable import SourceryFramework
 @testable import SourceryRuntime
+
+#if SWIFT_PACKAGE
+    import Foundation
+    @testable import SourceryLib
+#else
+    @testable import Sourcery
+#endif
 
 class StencilTemplateSpec: QuickSpec {
     // swiftlint:disable:next function_body_length
@@ -18,18 +20,30 @@ class StencilTemplateSpec: QuickSpec {
         describe("StencilTemplate") {
 
             func generate(_ template: String) -> String {
-                let arrayAnnotations = Variable(name: "annotated1", typeName: TypeName(name: "MyClass"))
+                let arrayAnnotations = Variable(
+                    name: "annotated1", typeName: TypeName(name: "MyClass"))
                 arrayAnnotations.annotations = ["Foo": ["Hello", "beautiful", "World"] as NSArray]
-                let singleAnnotation = Variable(name: "annotated2", typeName: TypeName(name: "MyClass"))
+                let singleAnnotation = Variable(
+                    name: "annotated2", typeName: TypeName(name: "MyClass"))
                 singleAnnotation.annotations = ["Foo": "HelloWorld" as NSString]
-                return (try? Generator.generate(nil, types: Types(types: [
-                    Class(name: "MyClass", variables: [
-                        Variable(name: "lowerFirstLetter", typeName: TypeName(name: "myClass")),
-                        Variable(name: "upperFirstLetter", typeName: TypeName(name: "MyClass")),
-                        arrayAnnotations,
-                        singleAnnotation
-                        ])
-                ]), functions: [], template: StencilTemplate(templateString: template))) ?? ""
+                return
+                    (try? Generator.generate(
+                        nil,
+                        types: Types(types: [
+                            Class(
+                                name: "MyClass",
+                                variables: [
+                                    Variable(
+                                        name: "lowerFirstLetter",
+                                        typeName: TypeName(name: "myClass")),
+                                    Variable(
+                                        name: "upperFirstLetter",
+                                        typeName: TypeName(name: "MyClass")),
+                                    arrayAnnotations,
+                                    singleAnnotation,
+                                ])
+                        ]), functions: [], template: StencilTemplate(templateString: template)))
+                    ?? ""
             }
 
             describe("json") {
@@ -42,11 +56,15 @@ class StencilTemplateSpec: QuickSpec {
                     )
 
                     it("renders unpretty json") {
-                        let result = try? StencilTemplate(templateString: "{{ argument.json | json }}").render(context)
+                        let result = try? StencilTemplate(
+                            templateString: "{{ argument.json | json }}"
+                        ).render(context)
                         expect(result).to(equal("{\"Version\":1}"))
                     }
                     it("renders pretty json") {
-                        let result = try? StencilTemplate(templateString: "{{ argument.json | json:true }}").render(context)
+                        let result = try? StencilTemplate(
+                            templateString: "{{ argument.json | json:true }}"
+                        ).render(context)
                         expect(result).to(equal("{\n  \"Version\" : 1\n}"))
                     }
                 }
@@ -59,11 +77,15 @@ class StencilTemplateSpec: QuickSpec {
                     )
 
                     it("renders unpretty json") {
-                        let result = try? StencilTemplate(templateString: "{{ argument.json | json }}").render(context)
+                        let result = try? StencilTemplate(
+                            templateString: "{{ argument.json | json }}"
+                        ).render(context)
                         expect(result).to(equal("[\"a\",\"b\"]"))
                     }
                     it("renders pretty json") {
-                        let result = try? StencilTemplate(templateString: "{{ argument.json | json:true }}").render(context)
+                        let result = try? StencilTemplate(
+                            templateString: "{{ argument.json | json:true }}"
+                        ).render(context)
                         expect(result).to(equal("[\n  \"a\",\n  \"b\"\n]"))
                     }
                 }
@@ -71,24 +93,30 @@ class StencilTemplateSpec: QuickSpec {
 
             describe("toArray") {
                 #if canImport(ObjectiveC)
-                context("given array") {
-                    it("doesnt modify the value") {
-                        let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | toArray }}{% endfor %}")
-                        expect(result).to(equal("[Hello, beautiful, World]"))
+                    context("given array") {
+                        it("doesnt modify the value") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | toArray }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[Hello, beautiful, World]"))
+                        }
                     }
-                }
                 #else
-                context("given array") {
-                    it("doesnt modify the value") {
-                        let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | toArray }}{% endfor %}")
-                        expect(result).to(equal("[\"Hello\", \"beautiful\", \"World\"]"))
+                    context("given array") {
+                        it("doesnt modify the value") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | toArray }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[\"Hello\", \"beautiful\", \"World\"]"))
+                        }
                     }
-                }
                 #endif
 
                 context("given something") {
                     it("transforms it into array") {
-                        let result = generate("{% for key,value in type.MyClass.variables.3.annotations %}{{ value | toArray }}{% endfor %}")
+                        let result = generate(
+                            "{% for key,value in type.MyClass.variables.3.annotations %}{{ value | toArray }}{% endfor %}"
+                        )
                         expect(result).to(equal("[HelloWorld]"))
                     }
                 }
@@ -106,75 +134,105 @@ class StencilTemplateSpec: QuickSpec {
             describe("isEmpty") {
                 context("given empty array") {
                     it("returns true") {
-                    let result = generate("{{ type.MyClass.allMethods | isEmpty }}")
+                        let result = generate("{{ type.MyClass.allMethods | isEmpty }}")
                         expect(result).to(equal("true"))
                     }
                 }
 
                 context("given non-empty array") {
                     it("returns false") {
-                    let result = generate("{{ type.MyClass.allVariables | isEmpty }}")
+                        let result = generate("{{ type.MyClass.allVariables | isEmpty }}")
                         expect(result).to(equal("false"))
                     }
                 }
             }
-            
+
             describe("lines") {
                 context("given string with newlines") {
                     it("splits it into lines") {
-                        let result = generate("{% set value %}Hello\nWorld{% endset %}{{ value|lines|join:\",\" }}")
+                        let result = generate(
+                            "{% set value %}Hello\nWorld{% endset %}{{ value|lines|join:\",\" }}")
                         let expected = "Hello,World"
                         expect(result).to(equal(expected))
                     }
-                    
+
                     it("splits it into non-empty lines") {
-                        let result = generate("{% set value %}Hello\n\n\nWorld{% endset %}{{ value|lines:true|join:\",\" }}")
+                        let result = generate(
+                            "{% set value %}Hello\n\n\nWorld{% endset %}{{ value|lines:true|join:\",\" }}"
+                        )
                         let expected = "Hello,World"
                         expect(result).to(equal(expected))
                     }
                 }
             }
-            
+
             describe("grouped") {
                 context("given array") {
                     it("groups it") {
-                        let result = generate("{% for group, variables in type.MyClass.variables|grouped:\"typeName.name\" %}{{ group }}: {% for v in variables %}{{ v.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}")
-                        let expected = "MyClass: upperFirstLetter, annotated1, annotated2, myClass: lowerFirstLetter"
+                        let result = generate(
+                            "{% for group, variables in type.MyClass.variables|grouped:\"typeName.name\" %}{{ group }}: {% for v in variables %}{{ v.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                        )
+                        let expected =
+                            "MyClass: upperFirstLetter, annotated1, annotated2, myClass: lowerFirstLetter"
                         expect(result).to(equal(expected))
+                    }
+                }
+            }
+
+            describe("collect") {
+                context("given array") {
+                    it("collects values into array") {
+                        let result = generate("{% collect collected %}{% append \"Hello\" %}{% append \"beautiful\" %}{% append \"World\" %}{% endcollect %}{{ collected|join:\", \"}}")
+                        expect(result).to(equal("Hello, beautiful, World"))
+                    }
+                }
+                
+                context("given dictionary") {
+                    it("collects values into dictionary") {
+                        let result = generate("{% collect collected keyed %}{% append \"Hello\" keyed \"one\" %}{% append \"beautiful\" keyed \"two\" %}{% append \"World\" keyed \"three\" %}{% endcollect %}{{ collected.one }}, {{ collected.two }}, {{ collected.three }}")
+                        expect(result).to(equal("Hello, beautiful, World"))
                     }
                 }
             }
 
             describe("sorted") {
-              #if canImport(ObjectiveC)
-              context("given array") {
-                it("sorts it") {
-                  let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sorted:\"description\" }}{% endfor %}")
-                  expect(result).to(equal("[beautiful, Hello, World]"))
-                }
-              }
-              #else
-              context("given array") {
-                it("sorts it") {
-                  let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sorted:\"description\" }}{% endfor %}")
-                  expect(result).to(equal("[\"beautiful\", \"Hello\", \"World\"]"))
-                }
-              }
-              #endif
+                #if canImport(ObjectiveC)
+                    context("given array") {
+                        it("sorts it") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sorted:\"description\" }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[beautiful, Hello, World]"))
+                        }
+                    }
+                #else
+                    context("given array") {
+                        it("sorts it") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sorted:\"description\" }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[\"beautiful\", \"Hello\", \"World\"]"))
+                        }
+                    }
+                #endif
             }
 
             describe("sortedDescending") {
                 context("given array") {
                     #if canImport(ObjectiveC)
-                    it("sorts it descending") {
-                        let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sortedDescending:\"description\" }}{% endfor %}")
-                        expect(result).to(equal("[World, Hello, beautiful]"))
-                    }
+                        it("sorts it descending") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sortedDescending:\"description\" }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[World, Hello, beautiful]"))
+                        }
                     #else
-                    it("sorts it descending") {
-                        let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sortedDescending:\"description\" }}{% endfor %}")
-                        expect(result).to(equal("[\"World\", \"Hello\", \"beautiful\"]"))
-                    }
+                        it("sorts it descending") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | sortedDescending:\"description\" }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[\"World\", \"Hello\", \"beautiful\"]"))
+                        }
                     #endif
                 }
             }
@@ -182,26 +240,32 @@ class StencilTemplateSpec: QuickSpec {
             describe("reversed") {
                 context("given array") {
                     #if canImport(ObjectiveC)
-                    it("reverses it") {
-                        let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | reversed }}{% endfor %}")
-                        expect(result).to(equal("[World, beautiful, Hello]"))
-                    }
+                        it("reverses it") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | reversed }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[World, beautiful, Hello]"))
+                        }
                     #else
-                    it("reverses it") {
-                        let result = generate("{% for key,value in type.MyClass.variables.2.annotations %}{{ value | reversed }}{% endfor %}")
-                        expect(result).to(equal("[\"World\", \"beautiful\", \"Hello\"]"))
-                    }
+                        it("reverses it") {
+                            let result = generate(
+                                "{% for key,value in type.MyClass.variables.2.annotations %}{{ value | reversed }}{% endfor %}"
+                            )
+                            expect(result).to(equal("[\"World\", \"beautiful\", \"Hello\"]"))
+                        }
                     #endif
                 }
             }
 
             context("given string") {
                 it("generates upperFirstLetter") {
-                    expect( generate("{{\"helloWorld\" | upperFirstLetter }}")).to(equal("HelloWorld"))
+                    expect(generate("{{\"helloWorld\" | upperFirstLetter }}")).to(
+                        equal("HelloWorld"))
                 }
 
                 it("generates lowerFirstLetter") {
-                    expect(generate("{{\"HelloWorld\" | lowerFirstLetter }}")).to(equal("helloWorld"))
+                    expect(generate("{{\"HelloWorld\" | lowerFirstLetter }}")).to(
+                        equal("helloWorld"))
                 }
 
                 it("generates uppercase") {
@@ -217,7 +281,8 @@ class StencilTemplateSpec: QuickSpec {
                 }
 
                 it("generates deletingLastComponent") {
-                    expect(generate("{{ \"/Path/Class.swift\" | deletingLastComponent }}")).to(equal("/Path"))
+                    expect(generate("{{ \"/Path/Class.swift\" | deletingLastComponent }}")).to(
+                        equal("/Path"))
                 }
 
                 it("checks for string in name") {
@@ -242,10 +307,16 @@ class StencilTemplateSpec: QuickSpec {
                 }
 
                 it("removes instances of a substring") {
-                    expect(generate("{{\"helloWorld\" | replace:\"he\",\"bo\" | replace:\"llo\",\"la\" }}")).to(equal("bolaWorld"))
-                    expect(generate("{{\"helloWorldhelloWorld\" | replace:\"hello\",\"hola\" }}")).to(equal("holaWorldholaWorld"))
-                    expect(generate("{{\"helloWorld\" | replace:\"hello\",\"\" }}")).to(equal("World"))
-                    expect(generate("{{\"helloWorld\" | replace:\"foo\",\"bar\" }}")).to(equal("helloWorld"))
+                    expect(
+                        generate(
+                            "{{\"helloWorld\" | replace:\"he\",\"bo\" | replace:\"llo\",\"la\" }}")
+                    ).to(equal("bolaWorld"))
+                    expect(generate("{{\"helloWorldhelloWorld\" | replace:\"hello\",\"hola\" }}"))
+                        .to(equal("holaWorldholaWorld"))
+                    expect(generate("{{\"helloWorld\" | replace:\"hello\",\"\" }}")).to(
+                        equal("World"))
+                    expect(generate("{{\"helloWorld\" | replace:\"foo\",\"bar\" }}")).to(
+                        equal("helloWorld"))
                 }
             }
 
@@ -255,60 +326,92 @@ class StencilTemplateSpec: QuickSpec {
                 }
 
                 it("generates upperFirstLetter") {
-                    expect(generate("{{ type.MyClass.variables.0.typeName | upperFirstLetter }}")).to(equal("MyClass"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | upperFirstLetter }}"))
+                        .to(equal("MyClass"))
                 }
 
                 it("generates lowerFirstLetter") {
-                    expect(generate("{{ type.MyClass.variables.1.typeName | lowerFirstLetter }}")).to(equal("myClass"))
+                    expect(generate("{{ type.MyClass.variables.1.typeName | lowerFirstLetter }}"))
+                        .to(equal("myClass"))
                 }
 
                 it("generates uppercase") {
-                    expect(generate("{{ type.MyClass.variables.0.typeName | uppercase }}")).to(equal("MYCLASS"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | uppercase }}")).to(
+                        equal("MYCLASS"))
                 }
 
                 it("generates lowercase") {
-                    expect(generate("{{ type.MyClass.variables.1.typeName | lowercase }}")).to(equal("myclass"))
+                    expect(generate("{{ type.MyClass.variables.1.typeName | lowercase }}")).to(
+                        equal("myclass"))
                 }
 
                 it("generates capitalise") {
-                    expect(generate("{{ type.MyClass.variables.1.typeName | capitalise }}")).to(equal("Myclass"))
+                    expect(generate("{{ type.MyClass.variables.1.typeName | capitalise }}")).to(
+                        equal("Myclass"))
                 }
 
                 it("checks for string in name") {
-                    expect(generate("{{ type.MyClass.variables.0.typeName | contains:\"my\" }}")).to(equal("true"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | contains:\"xx\" }}")).to(equal("false"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | !contains:\"my\" }}")).to(equal("false"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | !contains:\"xx\" }}")).to(equal("true"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | contains:\"my\" }}"))
+                        .to(equal("true"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | contains:\"xx\" }}"))
+                        .to(equal("false"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | !contains:\"my\" }}"))
+                        .to(equal("false"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | !contains:\"xx\" }}"))
+                        .to(equal("true"))
                 }
 
                 it("checks for string in prefix") {
-                    expect(generate("{{ type.MyClass.variables.0.typeName | hasPrefix:\"my\" }}")).to(equal("true"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | hasPrefix:\"My\" }}")).to(equal("false"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | !hasPrefix:\"my\" }}")).to(equal("false"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | !hasPrefix:\"My\" }}")).to(equal("true"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | hasPrefix:\"my\" }}"))
+                        .to(equal("true"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | hasPrefix:\"My\" }}"))
+                        .to(equal("false"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | !hasPrefix:\"my\" }}"))
+                        .to(equal("false"))
+                    expect(generate("{{ type.MyClass.variables.0.typeName | !hasPrefix:\"My\" }}"))
+                        .to(equal("true"))
                 }
 
                 it("checks for string in suffix") {
-                    expect(generate("{{ type.MyClass.variables.0.typeName | hasSuffix:\"Class\" }}")).to(equal("true"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | hasSuffix:\"class\" }}")).to(equal("false"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | !hasSuffix:\"Class\" }}")).to(equal("false"))
-                    expect(generate("{{ type.MyClass.variables.0.typeName | !hasSuffix:\"class\" }}")).to(equal("true"))
+                    expect(
+                        generate("{{ type.MyClass.variables.0.typeName | hasSuffix:\"Class\" }}")
+                    ).to(equal("true"))
+                    expect(
+                        generate("{{ type.MyClass.variables.0.typeName | hasSuffix:\"class\" }}")
+                    ).to(equal("false"))
+                    expect(
+                        generate("{{ type.MyClass.variables.0.typeName | !hasSuffix:\"Class\" }}")
+                    ).to(equal("false"))
+                    expect(
+                        generate("{{ type.MyClass.variables.0.typeName | !hasSuffix:\"class\" }}")
+                    ).to(equal("true"))
                 }
 
                 it("removes instances of a substring") {
-                    expect(generate("{{type.MyClass.variables.0.typeName | replace:\"my\",\"My\" | replace:\"Class\",\"Struct\" }}")).to(equal("MyStruct"))
-                    expect(generate("{{type.MyClass.variables.0.typeName | replace:\"s\",\"z\" }}")).to(equal("myClazz"))
-                    expect(generate("{{type.MyClass.variables.0.typeName | replace:\"my\",\"\" }}")).to(equal("Class"))
-                    expect(generate("{{type.MyClass.variables.0.typeName | replace:\"foo\",\"bar\" }}")).to(equal("myClass"))
+                    expect(
+                        generate(
+                            "{{type.MyClass.variables.0.typeName | replace:\"my\",\"My\" | replace:\"Class\",\"Struct\" }}"
+                        )
+                    ).to(equal("MyStruct"))
+                    expect(generate("{{type.MyClass.variables.0.typeName | replace:\"s\",\"z\" }}"))
+                        .to(equal("myClazz"))
+                    expect(generate("{{type.MyClass.variables.0.typeName | replace:\"my\",\"\" }}"))
+                        .to(equal("Class"))
+                    expect(
+                        generate("{{type.MyClass.variables.0.typeName | replace:\"foo\",\"bar\" }}")
+                    ).to(equal("myClass"))
                 }
 
             }
 
             it("rethrows template parsing errors") {
                 expect {
-                    try Generator.generate(nil, types: Types(types: []), functions: [], template: StencilTemplate(templateString: "{% tag %}"))
-                    }
-                    .to(throwError(closure: { (error) in
+                    try Generator.generate(
+                        nil, types: Types(types: []), functions: [],
+                        template: StencilTemplate(templateString: "{% tag %}"))
+                }
+                .to(
+                    throwError(closure: { (error) in
                         expect("\(error)").to(equal(": Unknown template tag 'tag'"))
                     }))
             }
@@ -318,16 +421,21 @@ class StencilTemplateSpec: QuickSpec {
                 outputDir = Stubs.cleanTemporarySourceryDir()
 
                 let templatePath = Stubs.templateDirectory + Path("Include.stencil")
-                let expectedResult = "// Generated using Sourcery Major.Minor.Patch — https://github.com/krzysztofzablocki/Sourcery\n" +
-                    "// DO NOT EDIT\n" +
-                "partial template content\n"
+                let expectedResult =
+                    "// Generated using Sourcery Major.Minor.Patch — https://github.com/krzysztofzablocki/Sourcery\n"
+                    + "// DO NOT EDIT\n" + "partial template content\n"
 
-                expect { try Sourcery(cacheDisabled: true).processFiles(.sources(Paths(include: [Stubs.sourceDirectory])), usingTemplates: Paths(include: [templatePath]), output: Output(outputDir), baseIndentation: 0) }.toNot(throwError())
+                expect {
+                    try Sourcery(cacheDisabled: true).processFiles(
+                        .sources(Paths(include: [Stubs.sourceDirectory])),
+                        usingTemplates: Paths(include: [templatePath]), output: Output(outputDir),
+                        baseIndentation: 0)
+                }.toNot(throwError())
 
-                let result = (try? (outputDir + Sourcery().generatedPath(for: templatePath)).read(.utf8))
+                let result =
+                    (try? (outputDir + Sourcery().generatedPath(for: templatePath)).read(.utf8))
                 expect(result).to(equal(expectedResult))
             }
-
         }
     }
 }
