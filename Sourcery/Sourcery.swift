@@ -526,6 +526,8 @@ extension Sourcery {
 
         Log.info("Generating code...")
         status = ""
+        
+        fileAnnotatedContent = [:]
 
         if output.isDirectory {
             try allTemplates.forEach { template in
@@ -690,7 +692,6 @@ extension Sourcery {
             return try processRanges(in: parsingResult, result: result, outputPath: outputPath, forceParse: forceParse, baseIndentation: baseIndentation)
         }
         
-        fileAnnotatedContent = [:]
 
         var result: String = ""
 #if canImport(ObjectiveC)
